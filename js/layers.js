@@ -54,14 +54,27 @@ addLayer("p", {
         return player[this.layer].points.add(1).pow(0.2)
     },
     effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
-        },
+        },            
         14: {
             name: "yet another upgrade name",
-            title: "A new Thing!",
-            description: "Unlock a buyable",
-            unlocked() { return hasUpgrade('p', 13) },
-            
-        },
+            title: "The challenging day",
+            description: "Unlock a challenge.",
+            unlocked() { return hasUpgrade('p', 14) },
+        }
+    },
+    challenges: {
+        11: {
+            name: "The first challenge",
+            description: "points is square rooted.",
+            goal: new Decimal(100),
+            rewardDescription: "Raise your points by your prestige points.",
+            unlocked() { return hasUpgrade('p', 14) },
+            canComplete() { return player.points.gte(this.goal) },
+            completionLimit: 1,
+            rewardEffect() {
+                return player[this.layer].points.add(1).log10().pow(0.5)
+            },
+            rewardDisplay() { return format(this.rewardEffect())+"x" }, // Add formatting to the effect
+        }
     },
 })
-if hasUpgrade('p', 14)
