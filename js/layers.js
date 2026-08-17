@@ -6,7 +6,7 @@ addLayer("p", {
         unlocked: true,
 		points: new Decimal(0),
     }},
-    color: "#4BDC13",
+    color: "#00d9ff",
     requires: new Decimal(10), // Can be a function that takes requirement increases into account
     resource: "prestige points", // Name of prestige currency
     baseResource: "points", // Name of resource prestige is based on
@@ -15,6 +15,7 @@ addLayer("p", {
     exponent: 0.5, // Prestige currency exponent
     gainMult() { // Calculate the multiplier for main currency from bonuses
         mult = new Decimal(1)
+    if (hasUpgrade('p', 13)) mult = mult.times(upgradeEffect('p', 13))
         return mult
     },
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -28,8 +29,39 @@ addLayer("p", {
     upgrades: {
         11: {
             name: "an upgrade name",
+            title: "the start",
             description: "Multiply your points",
             cost: new Decimal(1)
         },
-    }
+        12: {
+            name: "another upgrade name",
+            title: "multipling",
+            description: "Multiply your points based on your prestige points",
+            cost: new Decimal(4),
+            unlocked() { return hasUpgrade('p', 11) },
+                effect() {
+        return player[this.layer].points.add(1).pow(0.3)
+    },
+    effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        13: {
+            name: "yet another upgrade name",
+            title: "reverse multipling",
+            description: "Multiply PP based on your points",
+            cost: new Decimal(10),
+            unlocked() { return hasUpgrade('p', 12) },
+                effect() {
+        return player[this.layer].points.add(1).pow(0.2)
+    },
+    effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect
+        },
+        14: {
+            name: "yet another upgrade name",
+            title: "A new Thing!",
+            description: "Unlock a buyable",
+            unlocked() { return hasUpgrade('p', 13) },
+            
+        },
+    },
 })
+if hasUpgrade('p', 14)
