@@ -27,9 +27,9 @@ addLayer("p", {
     layerShown(){return true}
 })
 upgrades: {
-    11: {
-        name: "an upgrade name",
-        description: "Multiply your points",
+    
+        name: "an upgrade name"
+        description: "Multiply your points"
         cost: new Decimal(1)
-    }
+    
 }
