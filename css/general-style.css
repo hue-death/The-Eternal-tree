@@ -24,6 +24,12 @@ h1, h2, h3, b, input {
 .can {
 	cursor: pointer;
 }
+.p.can {
+	cursor: pointer;
+	background: radial-gradient(#FFFFFF,#1cf7d9, #00d9ff);
+}
+
+
 
 .can:hover {
 	transform: scale(1.15, 1.15);

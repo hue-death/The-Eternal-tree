@@ -99,6 +99,9 @@ function getStartBuyables(layer) {
 	}
 	return data;
 }
+function layerText(elem, layer, text) {
+	return "<" + elem + " style='color:" + tmp[layer].color + ";text-shadow:0px 0px 10px;'>" + text + "</" + elem + ">"
+}
 function getStartClickables(layer) {
 	let data = {};
 	if (layers[layer].clickables) {

@@ -61,10 +61,23 @@ function setGridData(layer, id, data) {
 function upgradeEffect(layer, id) {
 	return (tmp[layer].upgrades[id].effect)
 }
+function upgradeEffect2(layer, id) {
+	return (tmp[layer].upgrades[id].effect2)
+}
+
+function milestoneEffect(layer, id) {
+	return (tmp[layer].milestones[id].effect)
+}
+function miletoneEffect2(layer, id) {
+	return (tmp[layer].milestones[id].effect2)
+}
 
 function challengeEffect(layer, id) {
 	return (tmp[layer].challenges[id].rewardEffect)
 }
+function challengeEffect2(layer, id) {
+	return (tmp[layer].challenges[id].rewardEffect2)
+} // because my Freaking challenge has 2 effects in it (PP chal 3 (id 21), PP chal 4 (id 22).)
 
 function buyableEffect(layer, id) {
 	return (tmp[layer].buyables[id].effect)

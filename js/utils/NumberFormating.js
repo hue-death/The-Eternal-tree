@@ -29,7 +29,14 @@ function regularFormat(num, precision) {
     if (num.mag < 0.1 && precision !==0) precision = Math.max(precision, 4)
     return num.toStringWithDecimalPlaces(precision)
 }
-
+function slogadd(n,add){
+	n = new Decimal(n)
+	return Decimal.tetrate(10,slog(n).add(add))
+}
+function slog(n){ // slog10(x), .slog is bugged >=eee9e15
+	n = new Decimal(n)
+	return Decimal.add(n.layer,new Decimal(n.mag).slog())
+}
 function fixValue(x, y = 0) {
     return x || new Decimal(y)
 }
@@ -40,7 +47,7 @@ function sumValues(x) {
     return x.reduce((a, b) => Decimal.add(a, b))
 }
 
-function format(decimal, precision = 2, small) {
+function format(decimal, precision = 3, small) {
     small = small || modInfo.allowSmall
     decimal = new Decimal(decimal)
     if (isNaN(decimal.sign) || isNaN(decimal.layer) || isNaN(decimal.mag)) {
@@ -97,7 +104,7 @@ function toPlaces(x, precision, maxAccepted) {
 }
 
 // Will also display very small numbers
-function formatSmall(x, precision=2) { 
+function formatSmall(x, precision=3) { 
     return format(x, precision, true)    
 }
 
