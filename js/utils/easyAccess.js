@@ -68,7 +68,7 @@ function upgradeEffect2(layer, id) {
 function milestoneEffect(layer, id) {
 	return (tmp[layer].milestones[id].effect)
 }
-function miletoneEffect2(layer, id) {
+function milestoneEffect2(layer, id) {
 	return (tmp[layer].milestones[id].effect2)
 }
 

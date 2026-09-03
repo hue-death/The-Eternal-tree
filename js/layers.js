@@ -1,22 +1,24 @@
-addLayer("p", { // SOMEONE HELP ME I DON'T KNOW HOW TO MAXIMIZE BUYABLES AMT, IF YOU HELPED ME THE GAME WILL LAND YOU THIS MAX BUYABLES AMT QOL
-    name: "prestige", // This is optional, only used in a few places, If absent it just uses the layer id.
+addLayer("p", { // SOMEONE TELL ME HOW TO HARD MAXIMIZE DISTANT SCALE BUYABLES ONTOP
+    name: "Prestige", // This is optional, only used in a few places, If absent it just uses the layer id.
     symbol: "P", // This appears on the layer's node. Default is the id with the first letter capitalized
     position: 0, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
     startData() { return {
         unlocked: true,
         power: new Decimal(0),
 		points: new Decimal(0),
+        generatePoints: false,
+        autob: false,
+        autob2: false,
     }},
     color: "#00d9ff",
     nodeStyle() {return {
         "background": (canReset('p'))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":"" ,
     }},
     componentStyles: {
-        "prestige-button"() {return { "background": (canReset('p'))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":""}} ,
-    },
+        "prestige-button"() {return { "background": (canReset('p'))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":""}} ,    },
     requires: new Decimal(10), // Can be a function that takes requirement increases into account
-    resource: "prestige points", // Name of prestige currency
-    resourceSingular: "prestige point",
+    resource: "Prestige points", // Name of prestige currency
+    resourceSingular: "Prestige point",
     baseResource: "points", // Name of resource prestige is based on
     baseAmount() {return player.points}, // Get the current amount of baseResource
     type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
@@ -30,12 +32,14 @@ addLayer("p", { // SOMEONE HELP ME I DON'T KNOW HOW TO MAXIMIZE BUYABLES AMT, IF
     mult = mult.mul(tmp.p.buyables[11].effect)
     if (player.a && player.a.unlocked && player.a.points.gt(0)) {
     mult = mult.times(tmp.a.effect)
+    }
     if (hasUpgrade('a', 11)) mult = mult.times(upgradeEffect('a', 11))
     if (hasChallenge('p', 32)) mult = mult.times(challengeEffect('p', 32))
+    if (player.p.points.gte(Decimal.pow(10, 2658))) mult = mult.div(10)
+    if (player.p.points.gte("1e3195")) mult=mult.div(1e2)
+    if (player.p.points.gte("1e5165")) mult=mult.div(1e10)
     if (inChallenge('a', 22)) mult = mult.root(3)
     if (inChallenge('p', 32)) mult = mult.root(3)
-}
-
         return mult
     }, // good
     gainExp() { // Calculate the exponent on main currency from bonuses
@@ -60,7 +64,10 @@ addLayer("p", { // SOMEONE HELP ME I DON'T KNOW HOW TO MAXIMIZE BUYABLES AMT, IF
         if (hasUpgrade('p', 35)) exp = exp.add(0.05)
         if (hasUpgrade('p', 41)) exp = exp.add(0.05)
         if (hasMilestone('p', 2)) exp = exp.add(0.1)
+        if (hasMilestone('a', 6)) exp = exp.add(0.05)
+        if (hasMilestone('a', 7)&&player.p.points.gte("e3161")) exp=exp.add(0.05)
         if (hasChallenge('p', 32)) exp = exp.add(0.25)
+        if (hasUpgrade('p', 45)) exp = exp.add(0.15)
         return exp
     },
 tabFormat: {
@@ -145,14 +152,25 @@ tabFormat: {
         {key: "p", description: "P: Reset for prestige points", onPress(){if (canReset(this.layer)) doReset(this.layer)}},
     ],
     update(diff) {
-        if (hasMilestone('a', 2)) generatePoints("p", diff)
+        if (hasMilestone('a', 2) && canReset('p')) generatePoints("p", diff, new Decimal(1))
         if (hasUpgrade('p', 31)) player.p.power = player.p.power.add(tmp.p.powerGain.mul(diff))
+        if (hasMilestone('a', 6) && player.p.autob){
+            layers.p.buyables[11].buy()
+            layers.p.buyables[12].buy()
+        }
+        if (hasMilestone('a', 8) && player.p.autob2)
+            layers.p.buyables[41].buy()
     },
     powerGain() {
         let exp = tmp.p.powerExp
         if (hasChallenge('p', 22)) exp = exp.add(challengeEffect2('p', 22))
         if (hasUpgrade('p', 41)) exp = exp.add(upgradeEffect('p', 41))
         if (hasMilestone('a', 6)) exp = exp.add(milestoneEffect('a', 6))
+        if (hasMilestone('a', 8)) exp = exp.add(milestoneEffect('a', 8))
+        if (player.p.power.gte(1e152)) exp = exp.add(1)
+        if (player.p.power.gte(2.5e156)) exp=exp.add(3)
+        if (player.p.power.gte(2.5e166)) exp=exp.add(6)
+        if (player.p.power.gte(2e210)) exp=exp.add(2.5)
         let base = tmp.p.buyables[41].effect
         let befExpMult = new Decimal(1)
         if (hasUpgrade('p', 32)) befExpMult = befExpMult.times(upgradeEffect('p', 32))
@@ -160,8 +178,11 @@ tabFormat: {
         if (hasUpgrade('p', 35)) befExpMult = befExpMult.times(upgradeEffect('p', 35))
         if (hasChallenge('p', 22)) befExpMult = befExpMult.times(challengeEffect('p', 22))
         if (hasUpgrade('p', 43)) befExpMult = befExpMult.times(upgradeEffect2('p', 43))
+        if (hasMilestone('p', 1)) befExpMult = befExpMult.times(milestoneEffect2('p', 1))
+        befExpMult = befExpMult.mul(tmp.a.buyables[13].effect2)
         befExpMult = befExpMult.times(tmp.p.buyables[43].effect)
         let fullGain = base.pow(exp).mul(befExpMult)
+        if (hasUpgrade('p', 45)) fullGain=fullGain.pow(1.01)
         return fullGain
     },
     powerExp() {
@@ -347,7 +368,7 @@ doReset(resettingLayer) {
         24: {
             title: "another challenging day",
             description: "Unlock another challenge.",
-            cost: new Decimal(1e32),
+            cost: new Decimal(1e31),
             unlocked() {return hasUpgrade('p', 23) && hasMilestone('p', 0)},
         },
         25: {
@@ -388,14 +409,14 @@ effect() {
         },
         31: {
             title: "Prestige Power Incremental",
-            description: "Unlock Prestige Power.",
+            description: "Improve Atom Upgrade 13, Unlock Prestige Power.",
             cost: new Decimal(Decimal.pow(10, 610).mul(3.5)),
             unlocked() { return hasUpgrade('a', 33)},
         },
         32: {
             title: "Pres. Power Booster",
-            description: "Multiply Pres. Power Based on PP Before The Exponent at Extremely Reduced rate, Unlock a Pres Mile at 105 'Pres. Pow. Exp.' buyables.",
-            cost: new Decimal(Decimal.pow(10, 1103)),
+            description: "Multiply Pres. Power Based on PP Before The Exponent at Extremely Reduced rate.",
+            cost: new Decimal(Decimal.pow(10, 1123)),
             unlocked() { return tmp.p.buyables[42].total.gte(1)},
             effect() {
                 let base = player.p.points.add(1).pow(6e-4)
@@ -410,13 +431,13 @@ effect() {
         33: {
             title: "Prestige Power Empowerer",
             description: "Add 0.05 to 'Pres. Pwer. G.' Base And Prestige Power Effect Exp., Improve Atom Challenge 1 Effect yet Again.",
-            cost: new Decimal(Decimal.pow(10, 1108).mul(1.25)),
-            unlocked() { return tmp.p.buyables[42].total.gte(3)}
+            cost: new Decimal(Decimal.pow(10, 1128).mul(1.25)),
+            unlocked() { return tmp.p.buyables[42].total.gte(3) && hasUpgrade('p', 32)}
         },
         34: {
             title: "True Challenging",
             description: "Unlock a Prestige Challenge, Improve Atom Challenge 2 Effect, Multiply Pres. Pow. Gain Bef. Exp. Based on Points.", // this will unlock an another one upon Complete.
-            cost: new Decimal(Decimal.pow(10, 1116)),
+            cost: new Decimal(Decimal.pow(10, 1153)),
             unlocked() { return hasUpgrade('p', 33)},
             effect() {
                 let base = player.points.add(1).pow(0.00075)
@@ -431,7 +452,7 @@ effect() {
         35: {
             title: "Complete Disturbions",
             description: "PP Boosts Pres. Pow. Bef Exp, Unlock 2 Miles, first at 5 Pres. Pow. Dup, Pres. Pow. Effect Exp+0.05",
-            cost: new Decimal(Decimal.pow(10, 1276)),
+            cost: new Decimal(Decimal.pow(10, 1297)),
             unlocked() { return hasUpgrade('p', 34)},
             effect() {
                 let base = player.p.points.add(1).pow(0.001)
@@ -446,7 +467,7 @@ effect() {
         41: {
             title: "Prestigous Prestige Power", // mile 1 (2) is insanely OVERPOWERED THAT ALMOST MADE PTS REACH 1e2000!, so i need to be Careful in putting effects.
             description: "PP Adds to Pres. Pow. Exp Gain, (max 2), Effect Exp+0.05.",
-            cost: new Decimal(Decimal.pow(10, 1746)),
+            cost: new Decimal(Decimal.pow(10, 1750)),
             unlocked() { return tmp.p.buyables[42].total.gte(44)},
             effect() {
                 let notBase = player.p.points.add(1).pow(0.00015)
@@ -476,7 +497,7 @@ effect() {
             cost: new Decimal("e5740"),
             unlocked() { return tmp.a.buyables[11].total.gte(74)},
             effect() {
-                let base = player.p.power.add(1).log10()
+                let base = player.p.power.add(10).log10()
                 return base
             },
             effect2() {
@@ -492,8 +513,8 @@ effect() {
         },
         44: {
             title: "Prestigous Challenge Empowerers'", // im starting to feel tired.
-            description: "Unlock a Challenge, Boost Atomic P. Gain Bef. Its Exp Based on Pres. Pow, Unlock An Atom Mile At 77 'A. Pow. G', Improve A. Chal 1 yet Again",
-            cost: new Decimal("e6100"),
+            description: "Unlock a Challenge, Boost Atomic P. Gain Bef. Its Exp Based on Pres. Pow, Unlock An Atom Mile, Improve A. Chal 1 yet Again, Atom. Pow. G Exp+2.",
+            cost: new Decimal("e6200"),
             unlocked() {return tmp.a.buyables[11].total.gte(103) && tmp.a.buyables[12].total.gte(9)},
             effect() {
                 let base = player.p.power.add(1).pow(0.01)
@@ -504,6 +525,22 @@ effect() {
                 let dis = format(effect)+'x'
                 return dis
             }
+        },
+        45: {
+            title: "Hazard Empowerer",
+            description: "Unlock an Atom Buyable, Pres. Pow. Eff Exp+0.15, Raise Prestige Power By 1.01, Add to Atom. Pow. Exp Based On Points, Unlock <h3 style='font-family: consolas;'>THE NEXT ATOM UPGRADE</h3>.",
+            cost: new Decimal('e12100'),
+            effect() {
+                let base = player.points.add(10).log10().pow(0.25).div(2.5)
+                return base
+            },
+            effectDisplay() {
+                let eff = upgradeEffect('p', 45)
+                let dis = "+"+format(eff)
+                return dis
+            },
+            unlocked() {return player.a.buyables[11].gte(404)}
+            // got rid of weird inflation.
         }
     },
     challenges: {
@@ -530,7 +567,7 @@ effect() {
                 let exccess = challengeEffect.sub(softcap).max(0)
                 let allowedGrowth = maxEffect.sub(softcap)
                 let softcappedExcess = allowedGrowth.times(exccess.div(exccess.add(allowedGrowth)))
-                if (challengeEffect = 1.5) challengeEffect = player[this.layer].points.add(10).log10().pow(0.1).min(1.5) // to prevent inflation
+                if (challengeEffect.gte(1.5)) challengeEffect = player[this.layer].points.add(10).log10().pow(0.1) // to prevent inflation
                 return softcap.add(softcappedExcess)
             },
             rewardDisplay() { 
@@ -544,7 +581,6 @@ effect() {
         }
         
         return display;
-        keepOnReset: return hasMilestone('a', 1)
     }, // Add formatting to the effect
         },
         12: {
@@ -585,7 +621,7 @@ effect() {
          return challengeDis
         },
         goal() {
-            if (challengeCompletions(this.layer, this.id) == 0) return new Decimal(1e73)
+            if (challengeCompletions(this.layer, this.id) == 0) return new Decimal(1e75)
             if (challengeCompletions(this.layer, this.id) == 1) return new Decimal(1e3080)
         },
         rewardDescription: "Add to Atoms' Base (max 0.05), at 2 Comps. (max 0.15) and Multiply Pt Sc Start Based On PP, After 2 Comps. Unlock a Pres Mile at 108 'Pres. Pow. Exp'",
@@ -600,7 +636,6 @@ effect() {
             let baseAdded1 = player.p.points.add(1).pow(1e-5)
             let base=baseAdded1=baseAdded1.sub(1)
             let HC = new Decimal(0.05)
-            if (challengeCompletions(this.layer, this.id) == 2) HC = new Decimal(0.15)
             if (challengeEffect(this.layer, this.id) < new Decimal(0)) base = new Decimal(0)
             if (base.gte(HC)) base = new Decimal(HC)
             return base
@@ -647,24 +682,25 @@ effect() {
         canComplete() {return player.points.gte(this.goal())},
         completionLimit: 2,
         unlocked() { return hasUpgrade('p', 35) && tmp.p.buyables[42].total.gte(7)},
-        rewardDescription: "<h4 style='font-size: 11px'>Multiply Pres. Pow. Gain Bef. Exp Based on Pts and Add to Pres. Pow. Gain Exp Based on PP at reduced rate, After 2 Comps. Unlock 2 Miles, First at 257 Pres. Pow. Exp, Improve Ups 32, 34.</h3>",
+        rewardDescription: "<h4 style='font-size: 11px'>Multiply Pres. Pow. Gain Bef. Exp Based on Pts and Add to Pres. Pow. Gain Exp Based on PP at reduced rate, After 2 Comps. Unlock 2 Miles, First at 257 Pres. Pow. ???, Improve Ups 32, 34.</h3>",
         rewardEffect() {
             let base = player.points.add(1).pow(0.0015).div(3.333)
             if (tmp.p.challenges[22].challengeEffect < new Decimal(1)) base = new Decimal(1) // prevent nerf
-            if (challengeCompletions('p', 22) == 2) base = player.points.add(1).pow(0.001875).div(2.5)
             return base
         },
         rewardEffect2() {
             let base = player.p.points.add(1).pow(0.0002).mul(2)
             base=base.sub(base.div(2)) //like div(2)
-            if (challengeCompletions('p', 22) == 2) base = player.p.points.add(1).pow(0.0003).mul(1.2).mul(2)
-            if (tmp.p.challenges[22].challengeEffect2 < new Decimal(0)) base = new Decimal(0)
+            let c22hc = new Decimal(200)
+            if (base.gte(c22hc)) base=new Decimal(200)
             return base
         },
         rewardDisplay() {
             let chalEff1 = this.rewardEffect()
             let chalEff2 = this.rewardEffect2()
             let dis = format(chalEff1)+"x"+", "+"+"+format(chalEff2)
+            let dishc = new Decimal(200)
+            if (chalEff2.gte(dishc)) dis+=" (hardcapped)"
             return dis
         },
         onEnter() {
@@ -691,23 +727,21 @@ effect() {
             return dis
         },
         goal() {
-            if (challengeCompletions('p', 31)==0) return new Decimal(1e21)
+            if (challengeCompletions('p', 31)==0) return new Decimal(1e6)
             if (challengeCompletions('p', 31)==1) return new Decimal(1e3080)
         },
-        canComplete() {return player.points.gte(this.goal())},
+    currencyDisplayName: "PP",
+        canComplete() {return player.p.points.gte(this.goal())},
         completionLimit: 2,
-        unlocked() { return hasUpgrade('p', 44) && tmp.a.buyables[11].total.gte(138)},
+        unlocked() { return hasUpgrade('p', 44) && tmp.a.buyables[11].total.gte(180)},
         rewardDescription: "<h4 style='font-size: 11px'>Multiply A. Pow. G. Bef. Exp Based on Pres. Pow, Add to It's Expoenent Based On Points, After 2 Comps, Unlock More Miles, Improve Pres 44 And 34 Atom Ups, Pres. Pow. Eff Exp+0.5</h3>",
         rewardEffect() {
             let base = player.p.power.add(1).pow(0.0125).div(3.333)
-            if (tmp.p.challenges[31].challengeEffect < new Decimal(1)) base = new Decimal(1) // prevent nerf
-            if (challengeCompletions('p', 31) == 2) base = player.p.power.add(1).pow(0.01875).div(2.5)
             return base
         },
         rewardEffect2() {
             let base = player.p.points.add(1).pow(0.00005).mul(2)
             base=base.sub(base.div(2)) //like div(2)
-            if (challengeCompletions('p', 31) == 2) base = player.p.points.add(1).pow(0.0003).mul(1.2).mul(2)
             if (tmp.p.challenges[31].challengeEffect2 < new Decimal(0)) base = new Decimal(0)
             return base
         },
@@ -746,11 +780,10 @@ effect() {
         },
         canComplete() {return player.points.gte(this.goal())},
         completionLimit: 2,
-        unlocked() { return tmp.a.buyables[11].total.gte(235)},
+        unlocked() { return tmp.a.buyables[11].total.gte(300)},
         rewardDescription: "<h4 style='font-size: 10px'>Multiply Pres. Buyable 1 Base by 1.1, at 2 Comps. Multiply it by 1.25 (not Ontop), Pres. Pow. Eff+0.25, Pres. Pow. Multiplies Prestige Pts By It's Effect^0.1, After 2 Comps. Eff^0.15, After 2 Comps. Unlock More Pres Miles, Improve A. Chal 2 Again, Pres. Pow. Eff Exp+1</h3>",
         rewardEffect() {
             let base = tmp.p.powerEff.pow(0.1)
-            if (challengeCompletions('p', 32) == 2) base = tmp.p.powerEff.pow(0.15)
             return base
         },
         rewardDisplay() {
@@ -805,14 +838,17 @@ effect() {
         done() { return player.p.power.gte(1e22)},
         unlocked() { return tmp.p.buyables[43].total.gte(5)},
         effectDescription() {
-            let dis = `Add 0.05 to Atoms' Base, Multiply Pres Buyable Eff By Pres. Pow at Extremely Reduced rate, 'Pres. Pow Exp' base+0.05<br>Currently: ${format(this.effect())}x`
+            let dis = `Add 0.05 to Atoms' Base, Multiply Pres Buyable 6 Eff By Pres. Pow at Extremely Reduced rate, Multiply Pres. Pow. Gain Bef. Exp Based on PP. (starts at 1e1400 PP), 'Pres. Pow Exp' base+0.05<br>Currently: ${format(this.effect())}x, ${format(this.effect2())}x`
             let sc = new Decimal(1.6)
             let sc2 = new Decimal(2)
             let HARDCAP = new Decimal(4)
             let eff = milestoneEffect('p', 1)
+            let eff2 = milestoneEffect2('p', 1)
+            let hc = new Decimal(1e6)
             if (eff.gte(sc)) dis += " (softcapped)"
-            if (eff.gte(sc2)) dis = `Add 0.05 to Atoms' Base, Multiply Pres Buyable Eff By Pres. Pow at Extremely Reduced rate, 'Pres. Pow Exp' base+0.05<br>Currently: ${format(this.effect())}x`+" (softcapped^2)"
-            if (eff.gte(HARDCAP)) dis = `Add 0.05 to Atoms' Base, Multiply Pres Buyable Eff By Pres. Pow at Extremely Reduced rate, 'Pres. Pow Exp' base+0.05<br>Currently: ${format(this.effect())}x`+" (hardcapped)" // TO PREVENT MY FUCKING SUFFOCATION!!!
+            if (eff.gte(sc2)) dis = `Add 0.05 to Atoms' Base, Multiply Pres Buyable 6 Eff By Pres. Pow at Extremely Reduced rate, Multiply Pres. Pow. Gain Bef. Exp Based on PP. (starts at 1e1400 PP), 'Pres. Pow Exp' base+0.05<br>Currently: ${format(this.effect())}x (softcapped^2), ${format(this.effect2())}x`
+            if (eff.gte(HARDCAP)) dis = `Add 0.05 to Atoms' Base, Multiply Pres Buyable 6 Eff By Pres. Pow at Extremely Reduced rate, Multiply Pres. Pow. Gain Bef. Exp Based on PP. (starts at 1e1400 PP), 'Pres. Pow Exp' base+0.05<br>Currently: ${format(this.effect())}x (hardcapped),  ${format(this.effect2())}x`// TO PREVENT MY FUCKING SUFFOCATION!!!
+            if (eff2.gte(hc)) dis += " (hardcapped)"
             return dis
         },
         effect() {
@@ -824,6 +860,13 @@ effect() {
             if (base.gte(sc2)) base=player.p.power.add(10).log10().div(9).add(base.div(2).pow(2.5)).pow(0.4)
             if (base.gte(HARDCAP)) base= new Decimal(4) // TO PREVENT MY SUFFOCATION!!
             return base
+        },
+        effect2() {
+            if (!player.p.points.gte("1e1600")) return new Decimal(1)
+            let base = player.p.points.add(1).pow(0.0025)
+            let hc = new Decimal(1e6)
+            if (base.gte(hc)) base=new Decimal(hc)
+            return base
         }
     },
     2: {
@@ -832,7 +875,7 @@ effect() {
         done() { return player.p.points.gte(new Decimal("e3198"))},
         unlocked() { return hasUpgrade('p', 42)},
         effectDescription() {
-            let dis = "Add 0.1 to Pres. Pow. eff Exp, Unlock the next upgrade at 505 Pres. Pow. Exp, Multiply Pt Sc Start Based on Pts. Currently: "+format(this.effect())+"x"
+            let dis = "Add 0.1 to Pres. Pow. eff Exp, Multiply Pt Sc Start Based on Pts. Currently: "+format(this.effect())+"x"
             return dis
         },
         effect() {
@@ -849,13 +892,19 @@ buyables: {
            let title = "Prestige Empowerer"
            let buyableAmt = getBuyableAmount('p', 11)
            let distStart = new Decimal(335)
+           let dist2 = new Decimal(1e3)
            if (buyableAmt.gte(distStart)) title = "Distant Prestige Empowerer"
+            if (buyableAmt.gte(dist2)) title = "Distant<h3 style='font-family: Consolas'>^</h3>2 Prestige Empowerer"
+
            return title
         },
         cost(x) {
              let costScale = new Decimal(1e60).mul(Decimal.pow(2.5, x.pow(1.33))) 
              let distStart = new Decimal(335)
+             let dist2 = new Decimal(1000)
              if (x.gte(distStart)) costScale = new Decimal(1e75).mul(Decimal.pow(2.5, distStart.pow(1.33))).mul(Decimal.pow(3, x.pow(1.425).sub(4009)))
+             if (x.gte(dist2)) costScale = new Decimal(1e75).mul(Decimal.pow(2.5, distStart.pow(1.33))).mul(Decimal.pow(3, dist2.pow(1.425))).mul(Decimal.pow(4, x.pow(1.475).sub(30000)))
+
              return costScale
             },
         base() {
@@ -864,6 +913,7 @@ buyables: {
             if (hasMilestone('a', 5)) base = base.add(milestoneEffect('a', 5))
             if (hasChallenge('a', 22)) base = base.add(challengeEffect('a', 22))
             if (hasUpgrade('a', 31)) base = base.add(upgradeEffect('a', 31))
+            if (player.p.points.gte("1e2613")) base=base.mul(1.075)
             if (hasChallenge('a', 32)) base = base.mul(1.1)
             return base
         },
@@ -886,25 +936,35 @@ buyables: {
         unlocked() { return hasUpgrade('a', 12) },
         canAfford() { return player[this.layer].points.gte(this.cost()) },
         buy() {
-            player[this.layer].points = player[this.layer].points.sub(this.cost())
-            setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
-            if (layers[this.layer].row > this.row) tmp.p.buyables = new Decimal(0)
-
+            if (player.p.points.gte(this.cost())) {
+            if (!hasMilestone('p', 6)) player[this.layer].points = player[this.layer].points.sub(this.cost())
+            setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(this.buyMax().add(1)))
+        }
+            if (layers[this.layer].row > this.row) player.p.buyables = new Decimal(0)
+            
         },
-        style() {return {
-        "background": (player.p.points.gte(this.cost()))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":"#bf8f8f" ,
-        }}
+        buyMax() {
+            let s = player.p.points
+            let distStart = new Decimal(335)
+            let dist2 = new Decimal(1e3)
+            let target = s.div(new Decimal(1e40)).log(2.5).root(1.333) // this getting even more Easier!!, cost base * log(cost scale), invert cost exp to root if exp.
+            let buyableAmt = tmp.p.buyables[11].total
+            if (target.gte(distStart)) target = s.div(new Decimal(1e-26)).mul(Decimal.pow(2.5, distStart.pow(1.33))).log(3).root(1.425) // this is even harder.../* NO WAY I CANT IMPLEMENT MAX BUY WITHIN' DIST SCALE!
+            if (target.gte(dist2)) target = s.div(new Decimal('1e1800')).mul(Decimal.pow(2.5, distStart.pow(1.33))).mul(Decimal.pow(3, dist2.pow(1.425))).log(4).root(1.475)
+            return target.floor().sub(buyableAmt)
+            if (target.eq(0)) target = new Decimal(1)
+        },
     },
     12: {
         title()  {
           let title = "Post-Softcap Booster"
           let buyableAmt = getBuyableAmount('p', 12)
-          if (buyableAmt.gte(1e308)) title = "Distant Post-Softcap Booster" // weird the cost scaling for buyable 11 is far more powerful than cost scale 12 even base and x exp is more than the 11 one
+          if (buyableAmt.gte(1.8e308)) title = "Distant Post-Softcap Booster" // weird the cost scaling for buyable 11 is far more powerful than cost scale 12 even base and x exp is more than the 11 one
           return title
         },
         cost(x) {
          let baseCost = new Decimal(1e80).mul(Decimal.pow(4, x.pow(1.4)))
-         if (x.gte(1e308)) baseCost = new Decimal(1e75).mul(Decimal.pow(4, distStart.pow(1.4))).mul(Decimal.pow(6.25, x.pow(1.5).sub(distStart)))
+         if (x.gte(1.8e308)) baseCost = new Decimal(1e75).mul(Decimal.pow(4, distStart.pow(1.4))).mul(Decimal.pow(6.25, x.pow(1.5).sub(distStart)))
          return baseCost
         }
         ,
@@ -944,13 +1004,31 @@ buyables: {
             },
         canAfford() { return player[this.layer].points.gte(this.cost()) },
         buy() {
-            player[this.layer].points = player[this.layer].points.sub(this.cost())
-            setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            if (player.p.points.gte(1e80)){
+             if (!hasMilestone('a', 6)) player[this.layer].points = player[this.layer].points.sub(this.cost())
+            setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(this.buyMax().add(1)))
+            }
         },
-                style() {return {
-        "background": (player.p.points.gte(this.cost()))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":"#bf8f8f" ,
-        }}
-    },
+        buyMax() {
+            let s = player.p.points
+            let target = s.div(new Decimal(1e80)).log(4).root(1.4) // this getting even more Easier!!, cost base * log(cost scale), invert cost exp to root if exp.
+            let buyableAmt = tmp.p.buyables[12].total
+            return target.floor().sub(buyableAmt)
+            if (target.lte(0)) target = new Decimal(1)
+            if (target.gte(0)) target = new Decimal(1)
+            if (target.eq(0)) target = new Decimal(1)
+        },
+        maxAfford() {
+            if (hasMilestone('a', 6)) {
+            let s = player.p.points
+            let target = s.div(new Decimal(1e80)).log(4).root(1.4) // this getting even more Easier!!, cost base * log(cost scale), invert cost exp to root if exp.
+            let buyableAmt = tmp.p.buyables[12].total
+            return target.floor().sub(buyableAmt)
+            if (target.eq(0)) target = new Decimal(1)
+            if (isNaN(target)) target = new Decimal(1)
+        }
+    }
+},
     13: {
         title() {
             let title = "Prestigous Empowerer"
@@ -994,6 +1072,12 @@ buyables: {
             Amount: "+formatWhole(getBuyableAmount('p', 13))
             let max = new Decimal(163)
             let buyableAmt = tmp.p.buyables[13].total
+            let eff = tmp.p.buyables[13].effect
+            let effhc = new Decimal(1.5)
+            if (eff.gte(effhc)) dis = "Raise Points By "+format(this.base())+" (Based on PP)\n\
+            Cost: "+format(tmp.p.buyables[13].cost)+" Prestige Points.\n\
+            Effect: "+"^"+format(tmp.p.buyables[13].effect)+" (hardcapped)\n\
+            Amount: "+formatWhole(getBuyableAmount('p', 13))
             if (buyableAmt.gte(max)) dis += "(MAXED)"
             return dis
         },
@@ -1004,9 +1088,98 @@ buyables: {
             player[this.layer].points = player[this.layer].points.sub(this.cost())
             setBuyableAmount(this.layer, this.id, getBuyableAmount('p', 13).add(1))
         },
-                style() {return {
-        "background": (player.p.points.gte(this.cost()))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":"#bf8f8f" ,
-        }}
+    },
+    21: {
+        title: "tester buyable", // which does nothin.
+        cost(x) {
+             let cost11 = new Decimal('e508').mul(Decimal.pow(7.5, x.pow(1.5)))
+             let buyableAmt = tmp.p.buyables[21].total
+             let distStart = new Decimal(40)
+             if (buyableAmt.gte(distStart)) cost11 = new Decimal(1e100).mul(Decimal.pow(7.5, distStart.pow(1.5))).mul(Decimal.pow(10, x.pow(1.65).sub(distStart.sub(1))))
+             return cost11
+        },
+        canAfford() { return player[this.layer].points.gte(this.cost())},
+        buy() {
+            if (!hasMilestone('a', 6)) player.p.points = player.p.points.sub(this.cost())
+            setBuyableAmount(this.layer, this.id, getBuyableAmount('p', 21).add(this.buyMax().add(1)))
+        },
+        buyMax() {
+            let s = player.p.points
+            let target = s.div(new Decimal('1e508')).log(7.5).root(1.5)
+            let distStart = new Decimal(40)
+            let buyableAmt = tmp.p.buyables[21].total
+            if (target.gte(distStart)) target = s.div(new Decimal('1e100')).mul(Decimal.pow(7.5, distStart.pow(1.5))).log10().root(1.65)
+            if (target.eq(0)) target = new Decimal(1)
+            return target.floor().sub(buyableAmt)
+        },
+        total() {
+            let total = getBuyableAmount('p', 21)
+            return total
+        },
+        maxAfford() {
+            let s = player.p.points
+            let target = s.div(new Decimal('1e508')).log(7.5).root(1.5)
+            let distStart = new Decimal(40)
+            let buyableAmt = tmp.p.buyables[21].total
+            if (target.gte(distStart)) target = s.div(new Decimal('1e100')).mul(Decimal.pow(7.5, distStart.pow(1.5))).log10().root(1.65)
+            if (target.eq(0)) target = new Decimal(1)
+            return target.floor().sub(buyableAmt)
+        },
+        display() {
+            let dis = "this is just for testing"+"\n\
+            Cost: "+format(tmp.p.buyables[21].cost)+" Prestige Points.\n\
+            Amount: "+formatWhole(getBuyableAmount('p', 21))
+            return dis
+        }
+    },
+    22: {
+        title: "tester buyable", // which does nothin.
+        cost(x) {
+             let costScale = new Decimal(1e60).mul(Decimal.pow(2.5, x.pow(1.33))) 
+             let distStart = new Decimal(335)
+             let dist2 = new Decimal(1000)
+             if (x.gte(distStart)) costScale = new Decimal(1e75).mul(Decimal.pow(2.5, distStart.pow(1.33))).mul(Decimal.pow(3, x.pow(1.425).sub(4009)))
+             if (x.gte(dist2)) costScale = new Decimal(1e75).mul(Decimal.pow(2.5, distStart.pow(1.33))).mul(Decimal.pow(3, dist2.pow(1.425))).mul(Decimal.pow(4, x.pow(1.475).sub(30000)))
+
+             return costScale
+        },
+        canAfford() { return player[this.layer].points.gte(this.cost())},
+        buy() {
+            if (!hasMilestone('a', 6)) player.p.points = player.p.points.sub(this.cost())
+            setBuyableAmount(this.layer, this.id, getBuyableAmount('p', 22).add(this.buyMax().add(1)))
+        },
+        buyMax() {
+            let s = player.p.points
+            let distStart = new Decimal(335)
+            let dist2 = new Decimal(1e3)
+            let target = s.div(new Decimal(1e40)).log(2.5).root(1.333) // this getting even more Easier!!, cost base * log(cost scale), invert cost exp to root if exp.
+            let buyableAmt = tmp.p.buyables[22].total
+            if (target.gte(distStart)) target = s.div(new Decimal(1e-26)).mul(Decimal.pow(2.5, distStart.pow(1.33))).log(3).root(1.425) // this is even harder.../* NO WAY I CANT IMPLEMENT MAX BUY WITHIN' DIST SCALE!
+            if (target.gte(dist2)) target = s.div(new Decimal('1e1800')).mul(Decimal.pow(2.5, distStart.pow(1.33))).mul(Decimal.pow(3, dist2.pow(1.425))).log(4).root(1.475)
+            return target.floor().sub(buyableAmt)
+            if (target.eq(0)) target = new Decimal(1)
+        },
+        total() {
+            let total = getBuyableAmount('p', 22)
+            return total
+        },
+        maxAfford() {
+            let s = player.p.points
+            let distStart = new Decimal(335)
+            let dist2 = new Decimal(1e3)
+            let target = s.div(new Decimal(1e40)).log(2.5).root(1.333) // this getting even more Easier!!, cost base * log(cost scale), invert cost exp to root if exp.
+            let buyableAmt = tmp.p.buyables[11].total
+            if (target.gte(distStart)) target = s.div(new Decimal(1e-26)).mul(Decimal.pow(2.5, distStart.pow(1.33))).log(3).root(1.425) // this is even harder.../* NO WAY I CANT IMPLEMENT MAX BUY WITHIN' DIST SCALE!
+            if (target.gte(dist2)) target = s.div(new Decimal(1e-21)).mul(Decimal.pow(2.5, distStart.pow(1.33))).mul(Decimal.pow(3, dist2.pow(1.425))).log(4).root(1.475)
+            return target.floor().sub(buyableAmt)
+            if (target.eq(0)) target = new Decimal(1)
+        },
+        display() {
+            let dis = "this is just for testing"+"\n\
+            Cost: "+format(tmp.p.buyables[22].cost)+" Prestige Points.\n\
+            Amount: "+formatWhole(getBuyableAmount('p', 22))
+            return dis
+        }
     },
     41: {
         title: "Pres. Power Gain",
@@ -1014,6 +1187,9 @@ buyables: {
         base() {
             let base = new Decimal(1)
             if (hasUpgrade('p', 33)) base = base.add(0.05)
+            if (player.p.power.gt(2e244) && hasMilestone('a', 7)) base = base.add(0.05)
+            if (player.p.power.gt(1e246)) base = base.add(0.05)
+            if (player.p.power.gt(1e248)) base=base.add(0.1)
             return base
         },
         total() {
@@ -1034,12 +1210,18 @@ buyables: {
         unlocked() { return hasUpgrade('p', 31)},
         canAfford() { return player[this.layer].points.gte(this.cost())},
         buy() {
-             player[this.layer].points = player[this.layer].points.sub(this.cost())
-             setBuyableAmount(this.layer, this.id, getBuyableAmount('p', 41).add(1))
-            },
-                    style() {return {
-        "background": (player.p.points.gte(this.cost()))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":"#bf8f8f" ,
-        }}
+             if (player.p.points.gte(this.cost())) {
+             if (!hasMilestone('a', 8))player[this.layer].points = player[this.layer].points.sub(this.cost())
+             setBuyableAmount(this.layer, this.id, getBuyableAmount('p', 41).add(this.buyMax().add(1)))
+            }
+        },
+        buyMax() {
+            let s = player.p.points
+            let target = s.div(new Decimal('e630')).log10().root(1.475)
+            let buyableAmt = tmp.p.buyables[41].total
+            if (target.eq(0)) target = new Decimal(1)
+            return target.floor().sub(buyableAmt)
+        }
     },
     42: {
         title() {
@@ -1050,7 +1232,7 @@ buyables: {
             return dis
         },
         cost(x) {
-             let firstCost = new Decimal(40000).mul(Decimal.pow(2.75, x.pow(1.385)))
+             let firstCost = new Decimal(10000).mul(Decimal.pow(2.75, x.pow(1.385)))
              let distStart = new Decimal(275)
             if (x.gte(distStart)) firstCost = new Decimal(1e100).mul(Decimal.pow(3, distStart.pow(1.385))).mul(Decimal.pow(5, x.pow(1.65).sub(10750)))
             return firstCost
@@ -1058,6 +1240,7 @@ buyables: {
         base() {
             let base = new Decimal(0.25)
             if (hasMilestone('p', 1)) base=base.add(0.05)
+            if (hasMilestone('a', 7)) base=base.add(0.0333)
             return base
         },
         total() {
@@ -1081,9 +1264,6 @@ buyables: {
              player.p.power = player.p.power.sub(this.cost())
              setBuyableAmount(this.layer, this.id, getBuyableAmount('p', 42).add(1))
             },
-        style() {return {
-        "background": (player.p.points.gte(this.cost()))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":"#bf8f8f" ,
-        }}
     },
     43: {
         title() {
@@ -1099,13 +1279,14 @@ buyables: {
             let baseScale = new Decimal(1e17).mul(Decimal.pow(3, x.pow(1.35)))
             let distStart=new Decimal(40)
             let distStart2 =new Decimal(49)
-            if (x.gte(distStart)) baseScale = new Decimal(1).mul(Decimal.pow(3, distStart.pow(1.35))).mul(Decimal.pow(4.5, x.div(40).pow(1.8).mul(40)))
+            if (x.gte(distStart)) baseScale = new Decimal(1).mul(Decimal.pow(3, distStart.pow(1.35)).div(1e5)).mul(Decimal.pow(4.5, x.div(40).pow(1.8).mul(40)))
             if (x.gte(distStart2)) baseScale = new Decimal(1).mul(Decimal.pow(3, distStart.pow(1.35))).mul(4.5, distStart2.pow(1.8)).mul(Decimal.pow(new Decimal(6).mul(x.div(49)), x.div(49).pow(2).mul(49)))
             return baseScale
         },
         base() {
             let base = player.points.add(1).pow(0.00012).mul(player.p.points.add(1).pow(0.000111)).mul(1.333)
             if (hasMilestone('p', 1)) base = base.mul(milestoneEffect('p', 1))
+            if (hasMilestone('a', 6) && player.p.points.gte("1e2078")) base = base.mul(5)
             return base
         },
         total() {
@@ -1140,9 +1321,6 @@ buyables: {
              player.p.power = player.p.power.sub(this.cost())
              setBuyableAmount(this.layer, this.id, getBuyableAmount('p', 43).add(1))
             },
-        style() {return {
-        "background": (player.p.points.gte(this.cost()))?"radial-gradient(#FFFFFF, #1cf7d9, #00d9ff)":"#bf8f8f" ,
-        }}
     },
 }
 })
@@ -1194,23 +1372,30 @@ powerGain() {
     let base = tmp.a.buyables[11].effect
     let exp = tmp.a.buyables[12].effect.add(1)
     if (hasChallenge('p', 31)) exp = exp.add(challengeEffect2('p', 31))
-    if (hasMilestone('a', 6)) exp = exp.add(miletoneEffect2('a', 6))
-    let befExpMult = new Decimal(1)
-    if (hasUpgrade('p', 43)) befExpMult=befExpMult.mul(upgradeEffect('p', 43))
-    if (hasUpgrade('p', 44)) befExpMult=befExpMult.mul(upgradeEffect('p', 44))
-    if (hasChallenge('p', 31)) befExpMult=befExpMult.mul(challengeEffect('p', 31))
-    let eff = base.pow(exp).mul(befExpMult)
+    if (hasMilestone('a', 8)) exp = exp.add(milestoneEffect2('a', 8))
+    if (hasUpgrade('p', 44)) exp = exp.add(2)
+    if (hasUpgrade('p', 45)) exp = exp.add(upgradeEffect('p', 45))
+    let aftExpMult = new Decimal(1)
+    if (hasUpgrade('p', 43)) aftExpMult=aftExpMult.mul(upgradeEffect('p', 43))
+    if (hasUpgrade('p', 44)) aftExpMult=aftExpMult.mul(upgradeEffect('p', 44))
+    if (hasChallenge('p', 31)) aftExpMult=aftExpMult.mul(challengeEffect('p', 31))
+    let eff = base.pow(exp).mul(aftExpMult)
     return eff
 },
 powerEff() {
-    let resource = player.a.power
-    let exp = new Decimal(0.01)
-    let intenseSc = new Decimal(2)
+    let resource = player.a.power.add(10)
+    let exp = tmp.a.powerExp
+    let intenseSc = new Decimal(4)
     let effInLog = resource.pow(exp)
-    let eff = effInLog.log10().add(1).sub(new Decimal(0.005).mul(exp.mul(200)))
+    let eff = effInLog.log10().add(1).sub(new Decimal(exp))
     if (eff < new Decimal(1)) eff = new Decimal(1)
     if (eff.gte(intenseSc)) eff = eff.pow(0.25)
     return eff
+},
+powerExp() {
+    let exp = new Decimal(0.01)
+    exp = exp.add(tmp.a.buyables[13].effect)
+    return exp
 },
 powerLog() {
     let logExp = new Decimal(1)
@@ -1263,7 +1448,7 @@ tabFormat: {
             ["raw-html",
                 function() {
                     let resourceDis = "You Have " + layerText("h2", "a", format(player.a.power)) + " Atomic Power, which Boosts Atoms' Base By "+ layerText("h2", "a", format(tmp.a.powerEff))+ " (Hold Shift To See Effect Formula)"
-                    let a2 = shiftDown?("<br>Effect: log<sup>"+format(1)+"</sup>(x+10)<sup>"+format(0.01)+"</sup>+1"):''
+                    let a2 = shiftDown?("<br>Effect: log<sup>"+format(1)+"</sup>(x+10)<sup>"+format(tmp.a.powerExp)+"</sup>+1"):''
                     let presDis = "<br>You Have "+layerText("h2","p",format(player.p.points))+ " Prestige Points"
                     return resourceDis+a2+presDis
                 },
@@ -1405,9 +1590,9 @@ tabFormat: {
         },
         31: {
             title: "Overgrowing gains",
-            description: "Unlock another Buyable, Add 0.0005 to The Base of 'Prestige Empowerer' per 'Prestige Empowerer'.",
-            cost: new Decimal(134),
-            unlocked() { return hasUpgrade ('a', 25)},
+            description: "Add 0.0005 to The Base of 'Prestige Empowerer' per 'Prestige Empowerer'.",
+            cost: new Decimal(133),
+            unlocked() { return hasUpgrade ('a', 25) && hasChallenge('a', 22)},
             effect() {
                 let base = tmp.p.buyables[11].total.div(2e3)
                 let scStart = new Decimal(0.15)
@@ -1425,7 +1610,7 @@ tabFormat: {
         32: {
             title: "Overgrowing gains 2",
             unlocked() { return hasUpgrade('a', 31)},
-            description: "Unlock another Buyable, Add 0.00015 to The Base of 'Post-Sc Bster' per 'Post-Sc Bster'. (max 0.1)",
+            description: "Add 0.00015 to The Base of 'Post-Sc Bster' per 'Post-Sc Bster'. (max 0.1)",
             cost: new Decimal(148),
             effect() {
                 let base = tmp.p.buyables[12].total.div(7.5e3)
@@ -1446,6 +1631,7 @@ tabFormat: {
             description: "Unlock More Prestige Upgrades, More Pres Miles, More Pres Chals, And Add To Atoms' Base based on PP. (max 0.25)", // Pres Ups: 2 rows, Pres chals: 4 ontop, Pres Miles: the amt that it's good for me to set and balance these 2 rows
             effect() {
                 let added1Base = player.p.points.add(1).pow(0.000025)
+                if (hasUpgrade('p', 31))added1Base = player.p.points.add(1).pow(0.00005)
                 let base = added1Base.sub(1)
                 if (upgradeEffect(this.layer, this.id) < new Decimal(0)) base = new Decimal(0) // To end Value Break
                 let max = new Decimal(0.25)
@@ -1460,7 +1646,7 @@ tabFormat: {
                 return dis
             },
             unlocked() { return hasUpgrade('a', 32)},
-            cost: new Decimal(153)
+            cost: new Decimal(152)
 
         },
         34: {
@@ -1500,7 +1686,6 @@ tabFormat: {
                 if (hasUpgrade('a', 25)) base = player.points.add(1).pow(0.111)
                 if (hasUpgrade('p', 33)) base = player.points.add(1).pow(0.1333)
                 if (hasUpgrade('p', 44)) base = player.points.add(1).pow(0.1625)
-                if (challengeCompletions('a', 11) == 2) base = player.points.add(1).pow(0.225)
                 return base
             },
             rewardDisplay() {
@@ -1547,7 +1732,6 @@ tabFormat: {
             rewardEffect() {
                 let base = player.p.points.add(1).pow(0.0625)
                 if (hasUpgrade('p', 34)) base = player.p.points.add(1).pow(0.075)
-                if (challengeCompletions('a', 12) == 2) base = player.p.points.add(1).pow(0.105)
                 return base
             },
             rewardDisplay() {
@@ -1597,7 +1781,6 @@ tabFormat: {
                 let c11ScStart = new Decimal(0.0751)
                 let base = baseOther.sub(1)
                 if (challengeEffect('a', 21) < new Decimal(0)) base = new Decimal(0) // to prevent any effect breaks
-                if (challengeCompletions('a', 21) == 2) max = new Decimal(0.15)
                 if (base.gte(c11ScStart)) base = base.div(2).add(c11ScStart)
                 if (base.gte(max)) base = new Decimal(max)
                 return base
@@ -1639,7 +1822,7 @@ tabFormat: {
                 return chalDis
             },
             goal() {
-                if (challengeCompletions(this.layer, this.id) == 0) return new Decimal(1e34) // always a big number to test points after nerf and nerfs and calculate the maximum points gain in challenge and set it into a certain goal, after this change the goal to the pt amt in the challenge itself.
+                if (challengeCompletions(this.layer, this.id) == 0) return new Decimal(1e33) // always a big number to test points after nerf and nerfs and calculate the maximum points gain in challenge and set it into a certain goal, after this change the goal to the pt amt in the challenge itself.
                 if (challengeCompletions(this.layer, this.id) == 1) return new Decimal(1e3080)
             },
             canComplete() { return player.points.gte(this.goal())},
@@ -1650,10 +1833,10 @@ tabFormat: {
                 let chalHardcap = new Decimal(0.15)
                 let chalScStart = new Decimal(0.151) // to prevent such Sc decrease and effect weakens'
                 let base = baseOther.sub(1)
+                let comps = Decimal.min(this.challengeCompletions, 1)
                 if (challengeEffect(this.layer, this.id) < new Decimal(0)) base = new Decimal(0) // like the prev chal comment
                 if (base.gte(chalHardcap)) base=new Decimal(chalHardcap)
                 if (base.gte(chalScStart)) base = base.div(2).add(chalScStart)
-                if (challengeCompletions(this.layer, this.id) == 2) chalHardcap = new Decimal(0.25)
                 return base
             },
             rewardDisplay() {
@@ -1663,7 +1846,6 @@ tabFormat: {
                 let chalScStart = new Decimal(0.151) // for the display
                 if (chalEffect.gte(chalHardcap)) dis += " (hardcapped)"
                 if (chalEffect.gte(chalScStart)) dis += " (softcapped)"
-                if (challengeCompletions(this.layer, this.id) == 2) chalHardcap = new Decimal(0.25)
                 return dis
             },
             onEnter() {
@@ -1740,11 +1922,44 @@ tabFormat: {
             }
         },
         6: {
-            requirementDescription: format(1060)+" Atoms (7)",
+            requirementDescription: "390 Atoms (7)",
             effectDescription() {
-                let eff1 = milestoneEffect('a', 6)
-                let eff2 = miletoneEffect2('a', 6)
-                let dis = "Add to P. Pow. G Exp. Based On Atoms, Add to A. Pow. G Exp. Based On PP. Currently: "+"+"+format(eff1)+", "+"+"+format(eff2)
+                let eff = this.effect()
+                let dis = "Add to Pres. Pow Exp Based On Pres. Pow (Max +3) At reduced Rate, Autobuy 'After-Sc Bster', 'P-igous Emp.', Pres. Pow. Exp. +1/+3/+6/+2.5 At "+format(1e152)+"/"+format(2.5e156)+"/"+format(2.5e166)+"/"+format(2e210)+" Pres. Pow, Pres. Pow. Dup Base*5 at "+format(Decimal.pow(10, 2078))+" PP"+", Eff. Exp+0.05, But divide PP By "+format(10)+" At "+format("1e2658")+" PP.<br> Currently: "+"+"+format(eff)
+                let hc = new Decimal(3)
+                if (eff.gte(hc)) dis += " (hardcapped)"
+                return dis
+            },
+            done() { return player.a.points.gte(390)},
+            unlocked() { return hasMilestone('a', 5)},
+            effect() {
+                let base = player.p.power.add(1).pow(0.0025)
+                let hc = new Decimal(3)
+                if (base.gte(hc)) base = new Decimal(hc)
+                return base
+            },
+            toggles: [['p', 'autob']]
+        },
+        7: {
+            requirementDescription: "490 Atoms (8)",
+            effectDescription() {
+                let eff = this.effect()
+                let dis = "Add 0.033 to 'Pres. Pow. Exp' Base, 'Pres. Pow. Gain' Base+0.05/+0.05/0.1 At "+format(1e244)+"/"+format(1e246)+"/"+format(1e248)+" Pres. Pow, 'P-igous-Pow' base*1.075 at "+format("1e2613")+" PP, Pres. Pow Eff Exp+0.05 At 1.000e3161 PP, But divide PP By 100 At 1e3195 PP, Divide PP Again By 1e10 At 1e5165 PP." // balance reqs' to prevent surpass.
+                return dis
+            },
+            done() {return player.a.points.gte(490)},
+            unlocked() {return hasMilestone('a', 6)},
+            effect() {
+                let base = new Decimal(0)
+                return base
+            },
+        },
+        8: {
+            requirementDescription: format(1060)+" Atoms (9)",
+            effectDescription() {
+                let eff1 = milestoneEffect('a', 8)
+                let eff2 = milestoneEffect2('a', 8)
+                let dis = "Add to P. Pow. G Exp. Based On Atoms, Add to A. Pow. G Exp. Based On PP, Autobuy 'Pres. Pow. G.'. Currently: "+"+"+format(eff1)+", "+"+"+format(eff2)
                 return dis
             },
             done() { return player.a.points.gte(1060) && hasUpgrade('p', 44)},
@@ -1756,7 +1971,8 @@ tabFormat: {
             effect2() {
                 let base = player.p.points.add(1).pow(0.00005)
                 return base
-            }
+            },
+            toggles: [['p', 'autob2']]
         }
  
     },
@@ -1817,6 +2033,46 @@ tabFormat: {
         buy() {
              player.a.power = player.a.power.sub(this.cost())
              setBuyableAmount(this.layer, this.id, getBuyableAmount('a', 12).add(1))
+            },
+        },
+        13: {
+            title: "Atom. Pow. Empower",
+        cost(x) { return new Decimal(1e156).mul(Decimal.pow(15, x.pow(1.9)))},
+        base() {
+            let base = new Decimal(0.0001)
+            return base
+        },
+        base2() {
+            let base2= player.a.power.add(1).pow(0.1)
+            let sc = new Decimal(1e30)
+            if (base2.gte(sc)) base2 = player.a.power.add(1).log10().div(sc.log10().div(10)).pow(sc.log10().div(2))
+            return base2
+        },
+        total() {
+            let total = getBuyableAmount('a', 13)
+            return total
+        },
+        display() {
+            return "Add "+format(tmp.a.buyables[13].base)+" To Exp. of Atomic Pow. Eff, Multiply Pres. Pow By "+format(tmp.a.buyables[13].base2)+"\n\
+            Cost: "+format(tmp.a.buyables[13].cost)+" Atomic Power\n\
+            Effect: "+"+"+format(tmp.a.buyables[13].effect)+", "+format(tmp.a.buyables[13].effect2)+"x"+"\n\
+            Amount: "+format(tmp.a.buyables[13].total)
+        },
+        effect() {
+            let base = tmp.a.buyables[13].base
+            let x = tmp.a.buyables[13].total
+            return Decimal.mul(base, x)
+        },
+        effect2() {
+            let base = tmp.a.buyables[13].base2
+            let x = tmp.a.buyables[13].total
+            return Decimal.pow(base, x)
+        },
+        unlocked() { return tmp.a.buyables[11].total.gte(426)},
+        canAfford() { return player.a.power.gte(this.cost())},
+        buy() {
+             player.a.power = player.a.power.sub(this.cost())
+             setBuyableAmount(this.layer, this.id, getBuyableAmount('a', 13).add(1))
             },
         }
     }

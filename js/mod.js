@@ -1,6 +1,7 @@
 let modInfo = {
 	name: "The Eternal Tree",
 	author: "Hue-death",
+	id: '11',
 	pointsName: "points",
 	pointsNameSingular: "point",
 	modFiles: ["layers.js", "tree.js"],
@@ -8,7 +9,7 @@ let modInfo = {
 	discordName: "",
 	discordLink: "",
 	initialStartPoints: new Decimal (10), // Used for hard resets and new players
-	offlineLimit: 1,  // In hours
+	offlineLimit: 0.05,  // In hours
 }
 
 // Set your version in num and name
@@ -30,7 +31,7 @@ let changelog = `<h1>Changelog:</h1><br>
 	- Added 1 Atom Milestones.<br>
 	- Changed some Pres Upgrade Costs.<br>
 	- Changed the req for Atom Chal 3 (1e139 -> 1e137).<br>
-	<h4 style="color: #ff0000; font-weight: bold;">WARNING: GAME OVERINFLATION BUG AFTER 1e16000 PP!<h4><br>
+	<h4 style="color: #ff0000; font-weight: bold;">WARNING: GAME OVERINFLATION BUG AFTER 1e16000 PP!<h4>
     <h2 style="color: green">v0.1</h2><br>
 	- Added Atoms.<br>
 	- Added Atom Challenges.<br>
@@ -79,9 +80,7 @@ function getPointGen() {
 	if (hasUpgrade('p', 42)) gain = gain.pow(1.025)
 	gain = gain.mul(tmp.p.buyables[11].effect)
     gain = gain.pow(tmp.p.buyables[13].effect)
-	if (player.a && player.a.unlocked && player.a.points.gt(0)) {
 		gain = gain.times(tmp.a.effect)
-	}
 	if (inChallenge('a', 22)) {
 		gain = gain.root(3)
 	}
@@ -91,7 +90,7 @@ function getPointGen() {
 	if (inChallenge('p', 31)) {
 		gain = gain.root(2.5)
 	}
-	if (inChallenge('p', 31)) {
+	if (inChallenge('p', 32)) {
 		gain = gain.root(135)
 	}
 
@@ -148,7 +147,7 @@ if (hasMilestone('p', 2)) {
 	if (hasUpgrade('a', 11)) {
 		gain = gain.times(upgradeEffect('a', 11))
 	}
-	
+
 	return gain
 }
 
@@ -200,7 +199,7 @@ var displayThings = [
 ]
 // Determines when the game "ends"
 function isEndgame() {
-	return player.points.gte("ee10") // because the bug intented to be in 1e15000 then tetrational overinflation.
+		return player.points.gte("ee10") // because the bug intented to be in 1e15000 then tetrational overinflation.
 }
 
 
@@ -213,7 +212,7 @@ var backgroundStyle = {
 
 // You can change this if you have things that can be messed up by long tick lengths
 function maxTickLength() {
-	return(3600) // Default is 1 hour which is just arbitrarily large
+	return(1) // Default is 1 hour which is just arbitrarily large
 }
 
 // Use this if you need to undo inflation from an older version. If the version is older than the version that fixed the issue,

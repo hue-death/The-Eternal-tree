@@ -60,6 +60,7 @@ function format(decimal, precision = 3, small) {
         var slog = decimal.slog()
         if (slog.gte(1e6)) return "F" + format(slog.floor())
         else return Decimal.pow(10, slog.sub(slog.floor())).toStringWithDecimalPlaces(3) + "F" + commaFormat(slog.floor(), 0)
+        if (slog.gte('e10000')) return "F" + format(slog.exponentialFormat(decimal, 0).floor())
     }
     else if (decimal.gte("1e1000000")) return exponentialFormat(decimal, 0, false)
     else if (decimal.gte("1e10000")) return exponentialFormat(decimal, 0)
