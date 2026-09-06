@@ -13,9 +13,23 @@ function getStartOptions() {
 		showStory: true,
 		forceOneTab: false,
 		oldStyle: false,
-		forceTooltips: true,
-		hideMilestonePopups: false,
+		tooltipForcing: true,
 	}
+}
+let notations = ['Scientific','Engineering','Standard']
+
+function changeNotation() {
+	// Verify player object exists before trying to modify it
+	if (!player) return;
+	
+	// Fallback to 'Scientific' if player.notation is somehow missing
+	if (!player.notation) player.notation = "Scientific";
+
+	let currentIndex = notations.indexOf(player.notation);
+	// If the current notation isn't found in the array, default to index 0
+	if (currentIndex === -1) currentIndex = 0;
+
+	player.notation = notations[(currentIndex + 1) % notations.length];
 }
 
 function toggleOpt(name) {
@@ -27,6 +41,7 @@ function toggleOpt(name) {
 		changeTreeQuality();
 	if (name == "oldStyle")
 		updateStyle();
+	if (name == "autosave") player.autosave = options.autosave
 }
 var styleCooldown = 0;
 function updateStyle() {

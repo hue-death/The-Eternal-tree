@@ -95,7 +95,6 @@ function getPointGen() {
 	}
 
 	gain = gain.mul(tmp.p.powerEff)
-	let powerEff = player.p.powereff
 	
 	let displayScStart = new Decimal(1e20)
 

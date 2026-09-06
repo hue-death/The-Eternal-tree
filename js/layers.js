@@ -36,8 +36,9 @@ addLayer("p", { // SOMEONE TELL ME HOW TO HARD MAXIMIZE DISTANT SCALE BUYABLES O
     if (hasUpgrade('a', 11)) mult = mult.times(upgradeEffect('a', 11))
     if (hasChallenge('p', 32)) mult = mult.times(challengeEffect('p', 32))
     if (player.p.points.gte(Decimal.pow(10, 2658))) mult = mult.div(10)
-    if (player.p.points.gte("1e3195")) mult=mult.div(1e2)
-    if (player.p.points.gte("1e5165")) mult=mult.div(1e10)
+    if (player.p.points.gte(new Decimal("1e3195"))) mult=mult.div(1e2)
+    if (player.p.points.gte(new Decimal("1e5165"))) mult=mult.div(1e10)
+    if (hasMilestone('a', 9)) mult = mult.mul(1e13)
     if (inChallenge('a', 22)) mult = mult.root(3)
     if (inChallenge('p', 32)) mult = mult.root(3)
         return mult
@@ -65,7 +66,7 @@ addLayer("p", { // SOMEONE TELL ME HOW TO HARD MAXIMIZE DISTANT SCALE BUYABLES O
         if (hasUpgrade('p', 41)) exp = exp.add(0.05)
         if (hasMilestone('p', 2)) exp = exp.add(0.1)
         if (hasMilestone('a', 6)) exp = exp.add(0.05)
-        if (hasMilestone('a', 7)&&player.p.points.gte("e3161")) exp=exp.add(0.05)
+        if (hasMilestone('a', 7)&&player.p.points.gte(new Decimal("1e3161"))) exp=exp.add(0.05)
         if (hasChallenge('p', 32)) exp = exp.add(0.25)
         if (hasUpgrade('p', 45)) exp = exp.add(0.15)
         return exp
@@ -203,9 +204,9 @@ doReset(resettingLayer) {
         11: {
             name: "an upgrade name",
             title: "The Start",
-            description: "Multiply your points",
+            description: "Generate 2 points per second.",
             cost: new Decimal(1),
-
+            effectDisplay() { return format(getPointGen())+"/s" },
 
         },
         12: {
@@ -539,7 +540,7 @@ effect() {
                 let dis = "+"+format(eff)
                 return dis
             },
-            unlocked() {return player.a.buyables[11].gte(404)}
+            unlocked() {return player.a.buyables[11].gte(403)}
             // got rid of weird inflation.
         }
     },
@@ -563,7 +564,7 @@ effect() {
                 let challengeEffect = player[this.layer].points.add(10).log10().pow(0.2)
                 let softcap = new Decimal(1.5)
                 let maxEffect = new Decimal(1.7)
-                if (challengeEffect.lte(softcap)) return challengeEffect
+                if (challengeEffect.lte(softcap)) return challengeEffect.min(softcap)
                 let exccess = challengeEffect.sub(softcap).max(0)
                 let allowedGrowth = maxEffect.sub(softcap)
                 let softcappedExcess = allowedGrowth.times(exccess.div(exccess.add(allowedGrowth)))
@@ -1375,10 +1376,12 @@ powerGain() {
     if (hasMilestone('a', 8)) exp = exp.add(milestoneEffect2('a', 8))
     if (hasUpgrade('p', 44)) exp = exp.add(2)
     if (hasUpgrade('p', 45)) exp = exp.add(upgradeEffect('p', 45))
+    if (hasMilestone('a', 9)) exp = exp.add(milestoneEffect('a', 9))
     let aftExpMult = new Decimal(1)
     if (hasUpgrade('p', 43)) aftExpMult=aftExpMult.mul(upgradeEffect('p', 43))
     if (hasUpgrade('p', 44)) aftExpMult=aftExpMult.mul(upgradeEffect('p', 44))
     if (hasChallenge('p', 31)) aftExpMult=aftExpMult.mul(challengeEffect('p', 31))
+    if (hasMilestone('a', 9)) aftExpMult=aftExpMult.mul(milestoneEffect2('a', 9))
     let eff = base.pow(exp).mul(aftExpMult)
     return eff
 },
@@ -1650,8 +1653,10 @@ tabFormat: {
 
         },
         34: {
-            unlocked() { return hasUpgrade('a', 33) && player.a.points.gte(1e308)}, // not implemented yet.
-            cost: new Decimal(1e3)
+            title: "Prestigous Tiers",
+            description: "",
+            unlocked() { return hasUpgrade('a', 33) && player.a.buyables[13].gte(6)},
+            cost: new Decimal(1587)
 
         },
         35: {
@@ -1973,6 +1978,35 @@ tabFormat: {
                 return base
             },
             toggles: [['p', 'autob2']]
+        },
+        9: {
+            requirementDescription: format('1e160')+" Atom. Power (10)",
+            effectDescription() {
+                let eff1 = milestoneEffect('a', 9)
+                let eff2 = milestoneEffect2('a', 9)
+                let dis = 'Multply PP by 1.000e13, Unlock a new mile at ???, Add to A. Pow. G Exp. Based On Atoms, Multiply Its G. Bef Exp based on itself, Unlock a new Challenge At ???, Autobuy "Atom. Pow. G.". Currently: <br>'+"+"+format(eff1)+', '+"x"+format(eff2)
+                let sc = new Decimal(1e2)
+                let sc2 = new Decimal(1e100)
+                if (eff1.gte(sc)) dis ='Multply PP by 1.000e13, Unlock a new mile at ???, Add to A. Pow. G Exp. Based On Atoms, Multiply Its G. Bef Exp based on itself, Unlock a new Challenge At ???, Autobuy "Atom. Pow. G.". Currently: <br>'+"+"+format(eff1)+" (softcapped)"+', '+"x"+format(eff2)
+                if (eff2.gte(sc2)) dis ='Multply PP by 1.000e13, Unlock a new mile at ???, Add to A. Pow. G Exp. Based On Atoms, Multiply Its G. Bef Exp based on itself, Unlock a new Challenge At ???, Autobuy "Atom. Pow. G.". Currently: <br>'+"+"+format(eff1)+', '+"x"+format(eff2)+ " (softcapped)"
+                if (eff1.gte(sc) && eff2.gte(sc2)) dis ='Multply PP by 1.000e13, Unlock a new mile at ???, Add to A. Pow. G Exp. Based On Atoms, Multiply Its G. Bef Exp based on itself, Unlock a new Challenge At ???, Autobuy "Atom. Pow. G.". Currently: <br>'+"+"+format(eff1)+" (softcapped)"+', '+"x"+format(eff2)+ " (softcapped)"
+                return dis
+            },
+            done() { return player.a.power.gte(1e160) && hasUpgrade('p', 45)},
+            unlocked() { return hasMilestone('a', 8) && hasUpgrade('p', 45)},
+            effect() {
+                let base = player.a.points.div(500)
+                let sc = new Decimal(1e2)
+                if (base.gte(sc)) base = base.log10().div(2).pow(0.5).mul(100).pow(base.log10().div(2).pow(0.5).max(1))
+                return base
+            },
+            effect2() {
+                let base = player.a.power.add(1).pow(0.01)
+                let sc11 = new Decimal(1e100)
+                if (base.gte(sc11)) base = base.log10().div(100).pow(0.5).mul(10).pow(new Decimal(100).mul(base.log10().div(100).pow(0.5).div(1).max(1)))
+                return base
+            },
+            toggles: [['a', 'autoba']]
         }
  
     },
